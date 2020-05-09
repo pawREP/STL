@@ -2436,9 +2436,35 @@ _FwdIt2 unique_copy(_ExPo&&, _FwdIt1 _First, _FwdIt1 _Last, _FwdIt2 _Dest) noexc
 #endif // _HAS_CXX17
 
 // FUNCTION TEMPLATE reverse_copy
-#if _HAS_IF_CONSTEXPR
 template <class _BidIt, class _OutIt>
 _CONSTEXPR20 _OutIt reverse_copy(_BidIt _First, _BidIt _Last, _OutIt _Dest) {
+    // copy reversing elements in [_First, _Last)
+    _Adl_verify_range(_First, _Last);
+    const auto _UFirst = _Get_unwrapped(_First);
+    auto _ULast        = _Get_unwrapped(_Last);
+    auto _UDest        = _Get_unwrapped_n(_Dest, _Idl_distance<_BidIt>(_UFirst, _ULast));
+    for (; _UFirst != _ULast; ++_UDest) {
+        *_UDest = *--_ULast;
+    }
+
+    _Seek_wrapped(_Dest, _UDest);
+    return _Dest;
+}
+
+#if _HAS_CXX17
+template <class _ExPo, class _BidIt, class _FwdIt, _Enable_if_execution_policy_t<_ExPo> = 0>
+_FwdIt reverse_copy(_ExPo&&, _BidIt _First, _BidIt _Last, _FwdIt _Dest) noexcept /* terminates */ {
+    // copy reversing elements in [_First, _Last)
+    // not parallelized as benchmarks show it isn't worth it
+    _REQUIRE_PARALLEL_ITERATOR(_FwdIt);
+    return _STD reverse_copy(_First, _Last, _Dest);
+}
+#endif // _HAS_CXX17
+
+// FUNCTION TEMPLATE vectorized_reverse_copy
+#if _HAS_IF_CONSTEXPR
+template <class _BidIt, class _OutIt>
+_CONSTEXPR20 _OutIt vectorized_reverse_copy(_BidIt _First, _BidIt _Last, _OutIt _Dest) {
     // copy reversing elements in [_First, _Last)
     _Adl_verify_range(_First, _Last);
     const auto _UFirst = _Get_unwrapped(_First);
@@ -2549,7 +2575,7 @@ _OutIt _Reverse_copy_unchecked(const _BidIt _First, const _BidIt _Last, _OutIt _
 }
 
 template <class _BidIt, class _OutIt>
-_OutIt reverse_copy(const _BidIt _First, const _BidIt _Last, _OutIt _Dest) {
+_OutIt vectorized_reverse_copy(const _BidIt _First, const _BidIt _Last, _OutIt _Dest) {
     // copy reversing elements in [_First, _Last)
     _Adl_verify_range(_First, _Last);
     auto _UFirst = _Get_unwrapped(_First);
@@ -2565,11 +2591,11 @@ _OutIt reverse_copy(const _BidIt _First, const _BidIt _Last, _OutIt _Dest) {
 
 #if _HAS_CXX17
 template <class _ExPo, class _BidIt, class _FwdIt, _Enable_if_execution_policy_t<_ExPo> = 0>
-_FwdIt reverse_copy(_ExPo&&, _BidIt _First, _BidIt _Last, _FwdIt _Dest) noexcept /* terminates */ {
+_FwdIt vectorized_reverse_copy(_ExPo&&, _BidIt _First, _BidIt _Last, _FwdIt _Dest) noexcept /* terminates */ {
     // copy reversing elements in [_First, _Last)
     // not parallelized as benchmarks show it isn't worth it
     _REQUIRE_PARALLEL_ITERATOR(_FwdIt);
-    return _STD reverse_copy(_First, _Last, _Dest);
+    return _STD vectorized_reverse_copy(_First, _Last, _Dest);
 }
 #endif // _HAS_CXX17
 
